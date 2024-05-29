@@ -1,0 +1,31 @@
+h1 {
+    color: #0B607C;
+}
+
+.sun-icon {
+    width: 0.8em;
+    margin-left: 12px;
+}
+
+#selectButtonCity,
+#selectButtonYear {
+    cursor: pointer;
+}
+
+.listening-rect {
+    pointer-events: all;
+    fill-opacity: 0;
+    stroke-opacity: 0;
+    z-index: 1;
+}
+
+.tooltip {
+    position: absolute;
+    padding: 10px;
+    background-color: #0B607C;
+    color: white;
+    border: 1px solid white;
+    border-radius: 8px;
+    display: none;
+    opacity: .75;
+}

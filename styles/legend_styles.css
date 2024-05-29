@@ -1,0 +1,50 @@
+#legend3 {
+    display: flex;
+    flex-direction: column;
+    max-width: 20%;
+    margin-top: 150px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+.legend-rect3 {
+    width: 32px;
+    height: 32px;
+    margin-right: 8px;
+}
+
+.legend-item p {
+    margin: 0;
+}
+
+.crossed-out {
+    text-decoration: line-through;
+}
+
+.axis--x .tick:first-of-type text {
+    display: none;
+}
+
+
+.rect2 {
+    pointer-events: all;
+    fill-opacity: 0;
+    stroke-opacity: 0;
+    z-index: 1;
+}
+
+.tooltip2 {
+    position: absolute;
+    padding: 10px;
+    background-color: #0B607C;
+    color: white;
+    border: 1px solid white;
+    border-radius: 10px;
+    display: none;
+    opacity: .75;
+}

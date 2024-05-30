@@ -1,17 +1,15 @@
-
-// Set dimensions and margins for the chart
 const margin3 = { top: 70, right: 30, bottom: 40, left: 80 };
 const width3 = 1200 - margin3.left - margin3.right;
 const height3 = 500 - margin3.top - margin3.bottom;
 const legendWidth3 = 150;
 
-//Set up the x and y scales
 
 const x3 = d3.scaleTime()
     .range([0, width3]);
 
 const y3 = d3.scaleLinear()
     .range([height3, 0]);
+
 
 selectedCity = "zg";
 selectedYear = "2022";
@@ -20,8 +18,8 @@ const svg_cities = d3.select("#cities_temperature_chart").append("svg")
     .attr("width", width3 + margin3.left + margin3.right)
     .attr("height", height3 + margin3.top + margin3.bottom);
 
-// create tooltip div
 
+// create tooltip div
 const tooltip_cities = d3.select("#cities_temperature_chart")
     .append("div")
     .attr("class", "tooltip2")
@@ -39,9 +37,9 @@ const parseDate = d3.timeParse("%Y-%m-%d");
 
 let dataForCitiesChart = [];
 
-// // Load and Process Data
+// Load and Process Data
 function fetchDataForCitiesChart() {
-    // Load multiple JSON files using Promise.all
+    // Load multiple JSON files 
     Promise.all([
         d3.json(`data/zg_${selectedYear}.json`),
         d3.json(`data/st_${selectedYear}.json`),
@@ -138,7 +136,7 @@ function drawLines(datasets) {
         .attr("stroke-width", .5);
 
 
-    // Add Y-axis label
+    // Y-axis label
 
     g.append("text")
         .attr("transform", "rotate(-90)")
@@ -151,7 +149,7 @@ function drawLines(datasets) {
         .style("font-family", "sans-serif")
         .text("Temperature (°C)");
 
-    // Add the chart title
+    // the chart title
 
     g.append("text")
         .attr("class", "chart-title")

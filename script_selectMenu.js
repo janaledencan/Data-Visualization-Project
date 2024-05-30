@@ -21,7 +21,6 @@ d3.select("#selectButtonCity")
     .attr("value", function (d) { return d.value; });
 
 
-// add the options to the button
 d3.select("#selectButtonYear")
     .selectAll('myOptions')
     .data(years)

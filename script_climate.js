@@ -1,5 +1,3 @@
-
-// Dimensions and margins
 const margin2 = { top: 60, right: 60, bottom: 50, left: 60 };
 const width2 = 900 - margin2.left - margin2.right;
 const height2 = 500 - margin2.top - margin2.bottom;
@@ -27,7 +25,7 @@ let dataForClimateChart = [];
 
 
 function fetchDataForClimateChart() {
-    // Load the data
+
     d3.json(`data/${selectedCity}_${selectedYear}.json`).then(data => {
 
         // Format the data
@@ -67,6 +65,7 @@ function handleSelectChangeClimate() {
 
 d3.select("#selectButtonYear").on("change", handleSelectChangeClimate);
 d3.select("#selectButtonCity").on("change", handleSelectChangeClimate);
+
 // Initialize the default values and update the graph
 handleSelectChangeClimate();
 
@@ -107,7 +106,7 @@ function drawClimateChart(data) {
     // Calculate zero temperature line position
     const zeroTempY = yTemp(0);
 
-    // // Add the chart title
+    // the chart title
     var city = cities.filter(city => city.value == selectedCity);
     console.log(city)
 
@@ -142,7 +141,7 @@ function drawClimateChart(data) {
         .attr("class", "line")
         .attr("d", tempLine);
 
-    // Add the X Axis
+    // the X Axis
     svg_climate.append("g")
         .attr("transform", `translate(0,${zeroTempY})`)
         .call(d3.axisBottom(x2).tickFormat(d3.timeFormat("%b")))
@@ -153,7 +152,7 @@ function drawClimateChart(data) {
         .attr("text-anchor", "middle")
         .text("Months");
 
-    // Add the Y Axis (left for temperature)
+    // the Y Axis (left for temperature)
     svg_climate.append("g")
         .attr("transform", `translate(0,0)`)
         .call(d3.axisLeft(yTemp).ticks(10))
@@ -171,7 +170,7 @@ function drawClimateChart(data) {
         .text("Temperature (°C)");
 
 
-    // Add the Y Axis (right for precipitation)
+    // the Y Axis (right for precipitation)
     svg_climate.append("g")
         .attr("transform", `translate(${width2},${zeroTempY - height2})`)
         .call(d3.axisRight(yPrcp).ticks(10))

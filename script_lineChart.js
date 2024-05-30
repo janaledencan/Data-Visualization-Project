@@ -1,11 +1,8 @@
-
-// Set dimensions and margins for the chart
 const margin = { top: 70, right: 30, bottom: 40, left: 80 };
 const width = 1200 - margin.left - margin.right;
 const height = 500 - margin.top - margin.bottom;
 const legendWidth = 150;
 
-// Set up the x and y scales
 
 const x = d3.scaleTime()
     .range([0, width]);
@@ -17,7 +14,6 @@ selectedCity;
 selectedYear;
 
 
-// Create the SVG element and append it to the chart container
 
 const svg_temperature = d3.select("#chart-container")
     .append("svg")
@@ -33,7 +29,6 @@ const parseDate1 = d3.timeParse("%Y-%m-%d");
 let dataForTemperatureChart = [];
 
 // create tooltip div
-
 const tooltip_temperature = d3.select("#chart-container")
     .append("div")
     .attr("class", "tooltip")
@@ -47,7 +42,6 @@ legend_data_temperature = [
 
 
 function fetchData() {
-    //dataForTemperatureChart = [];
     d3.json(`data/${selectedCity}_${selectedYear}.json`).then(function (data) {
 
         data.forEach(d => {
@@ -83,9 +77,9 @@ function drawTemperatureChart(data) {
 
     // Define the x and y domains
     x.domain(d3.extent(data, d => d.date));
-    y.domain([-10, d3.max(data, d => d.tavg) + 2]); //start is 0 - I need temperature bellow 0 but not the line starting from bellow 0
+    y.domain([-10, d3.max(data, d => d.tavg) + 2]);
 
-    // Add the x-axis
+    // x-axis
 
     svg_temperature.append("g")
         .attr("transform", `translate(0,${height - 94})`)
@@ -100,15 +94,15 @@ function drawTemperatureChart(data) {
     svg_temperature.append("g")
         .style("font-size", "14px")
         .call(d3.axisLeft(y)
-            .ticks((d3.max(data, d => d.tavg)) / 5) //.ticks((d3.max(data, d => d.tavg) - (-5)) / 5) mozda dodati -5 za doljnje iscrtavanje
+            .ticks((d3.max(data, d => d.tavg)) / 5)
             .tickPadding(10)
         )
 
 
-    // // Add horizontal gridlines
+    // Add horizontal gridlines
 
     svg_temperature.selectAll("yGrid")
-        .data(y.ticks((d3.max(data, d => d.tavg)) / 5).slice(1))  //.data(y.ticks((d3.max(data, d => d.tavg) - (-5)) / 5).slice(1)) isa stvar kao gore
+        .data(y.ticks((d3.max(data, d => d.tavg)) / 5).slice(1))
         .join("line")
         .attr("x1", 0)
         .attr("x2", width)
@@ -174,7 +168,7 @@ function drawTemperatureChart(data) {
         .classed("listening-rect", true);
 
 
-    // create the mouse move function
+    // the mouse move function
 
     listeningRect.on("mousemove", function (event) {
         const [xCoord] = d3.pointer(event, this);
@@ -199,7 +193,7 @@ function drawTemperatureChart(data) {
             .duration(50)
             .attr("r", 5);
 
-        // add in  our tooltip
+        // tooltip text
 
         tooltip_temperature
             .style("display", "block")
@@ -224,7 +218,7 @@ function drawTemperatureChart(data) {
 
 
 
-    // // Add Y-axis label
+    // Y-axis label
 
     svg_temperature.append("text")
         .attr("transform", "rotate(-90)")
@@ -237,7 +231,7 @@ function drawTemperatureChart(data) {
         .style("font-family", "sans-serif")
         .text("Temperature (°C)");
 
-    // // Add the chart title
+    // chart title
     var city = cities.filter(city => city.value == selectedCity);
     console.log(city)
 
@@ -250,7 +244,7 @@ function drawTemperatureChart(data) {
         .style("font-family", "sans-serif")
         .text(`Temperatures in ${city[0].text} ${selectedYear}.`);
 
-    // // Add the source credit
+    // Add the source credit
 
     svg_temperature.append("text")
         .attr("class", "source-credit")
@@ -284,8 +278,6 @@ function discreteLegend({
     const svg_temperature = d3.select("#legend").append("svg")
         .attr("width", colWidth * nColumns)
         .attr("height", height)
-        // .attr("width", legendWidth)
-        // .attr("height", height)
         .attr("viewBox", [0, 0, legendWidth, height])
         .style("overflow", "visible")
         .style("display", "block");

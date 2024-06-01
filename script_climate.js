@@ -165,7 +165,7 @@ function drawClimateChart(data) {
         .attr("dy", "1em")
         .style("text-anchor", "middle")
         .style("font-size", "14px")
-        .style("fill", "#777")
+        .style("fill", "#ef476f")
         .style("font-family", "sans-serif")
         .text("Temperature (°C)");
 
@@ -183,7 +183,7 @@ function drawClimateChart(data) {
         .attr("dy", "1em")
         .style("text-anchor", "middle")
         .style("font-size", "14px")
-        .style("fill", "#777")
+        .style("fill", "#118ab2")
         .style("font-family", "sans-serif")
         .text("Precipitation (mm)");
 

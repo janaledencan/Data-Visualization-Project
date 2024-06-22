@@ -43,75 +43,76 @@ legend_data_temperature = [
 
 function fetchData() {
     d3.json(`data/${selectedCity}_${selectedYear}.json`).then(function (data) {
-
         data.forEach(d => {
             d.date = parseDate1(d.date);
             d.tavg = +d.tavg;
             d.tmax = +d.tmax;
             d.tmin = +d.tmin;
         });
-        console.log(data)
+        console.log(data);
         dataForTemperatureChart = data;
-        console.log(dataForTemperatureChart)
+        console.log(dataForTemperatureChart);
 
         // Update the graph with the new data
-        updateGraph(dataForTemperatureChart);
+        updateGraph(dataForTemperatureChart, cities, selectedCity, selectedYear);
 
     }).catch(function (error) {
         console.error('Error loading JSON data:', error);
     });
-
 }
 
 fetchData();
 
 let changeTimeout;
 
-
-function updateGraph(data) {
-    svg_temperature.selectAll("*").remove();
-    drawTemperatureChart(data);
+function updateGraph(data, cities, selectedCity, selectedYear) {
+    drawTemperatureChart(data, cities, selectedCity, selectedYear);
 }
 
-function drawTemperatureChart(data) {
+function drawTemperatureChart(data, cities, selectedCity, selectedYear) {
 
-    // Define the x and y domains
     x.domain(d3.extent(data, d => d.date));
     y.domain([-10, d3.max(data, d => d.tavg) + 2]);
 
-    // x-axis
+    const xAxis = svg_temperature.selectAll(".x-axis")
+        .data([null]);
 
-    svg_temperature.append("g")
+    xAxis.enter()
+        .append("g")
+        .attr("class", "x-axis")
         .attr("transform", `translate(0,${height - 94})`)
         .style("font-size", "14px")
-        .call(d3.axisBottom(x)
-            .ticks(d3.timeMonth.every(1))  //tick on x for every month
-            .tickFormat(d3.timeFormat("%b")));  //only name of the month
+        .merge(xAxis)
+        .call(d3.axisBottom(x).ticks(d3.timeMonth.every(1)).tickFormat(d3.timeFormat("%b")));
 
 
-    // Add the y-axis
+    const yAxis = svg_temperature.selectAll(".y-axis")
+        .data([null]);
 
-    svg_temperature.append("g")
+    yAxis.enter()
+        .append("g")
+        .attr("class", "y-axis")
         .style("font-size", "14px")
-        .call(d3.axisLeft(y)
-            .ticks((d3.max(data, d => d.tavg)) / 5)
-            .tickPadding(10)
-        )
+        .merge(yAxis)
+        .call(d3.axisLeft(y).ticks((d3.max(data, d => d.tavg)) / 5).tickPadding(10));
 
+    // Update horizontal gridlines
+    const gridLines = svg_temperature.selectAll(".y-grid")
+        .data(y.ticks((d3.max(data, d => d.tavg)) / 5).slice(1));
 
-    // Add horizontal gridlines
-
-    svg_temperature.selectAll("yGrid")
-        .data(y.ticks((d3.max(data, d => d.tavg)) / 5).slice(1))
-        .join("line")
+    gridLines.enter()
+        .append("line")
+        .attr("class", "y-grid")
+        .merge(gridLines)
         .attr("x1", 0)
         .attr("x2", width)
         .attr("y1", d => y(d))
         .attr("y2", d => y(d))
         .attr("stroke", "#e0e0e0")
-        .attr("stroke-width", .5)
+        .attr("stroke-width", .5);
 
-    // Create the line generator
+    gridLines.exit().remove();
+
 
     const line = d3.line()
         .x(d => x(d.date))
@@ -125,102 +126,96 @@ function drawTemperatureChart(data) {
         .x(d => x(d.date))
         .y(d => y(d.tmin));
 
+    // Update the lines
+    updateLine(data, line, "average-line", "#899499"); // average temperature line
+    updateLine(data, line2, "max-line", "#ef476f"); // maximum temperature line
+    updateLine(data, line3, "min-line", "#118ab2"); // minimum temperature line
 
-    // Add the line path to the SVG element
+    function updateLine(data, lineGenerator, className, color) {
+        const path = svg_temperature.selectAll(`.${className}`)
+            .data([data]);
 
-    svg_temperature.append("path")
-        .datum(data)
-        .attr("fill", "none")
-        .attr("stroke", "#899499") //gray
-        .attr("stroke-width", 1.5)
-        .attr("d", line);
+        path.enter()
+            .append("path")
+            .attr("class", className)
+            .merge(path)
+            .attr("fill", "none")
+            .attr("stroke", color)
+            .attr("stroke-width", 1.5)
+            .attr("d", lineGenerator);
 
-    svg_temperature.append("path")
-        .datum(data)
-        .attr("fill", "none")
-        .attr("stroke", "#ef476f") //red
-        .attr("stroke-width", 1.5)
-        .attr("d", line2);
+        path.exit().remove();
+    }
 
+    // Update the circle element for moving through visualization
+    const circle = svg_temperature.selectAll(".hover-circle")
+        .data([null]);
 
-    svg_temperature.append("path")
-        .datum(data)
-        .attr("fill", "none")
-        .attr("stroke", "#118ab2") //blue
-        .attr("stroke-width", 1.5)
-        .attr("d", line3);
-
-
-    // Add a circle element for moving throug visualization
-    const circle = svg_temperature.append("circle")
+    circle.enter()
+        .append("circle")
+        .attr("class", "hover-circle")
         .attr("r", 0)
         .attr("fill", "steelblue")
         .style("stroke", "white")
         .attr("opacity", .70)
-        .style("pointer-events", "none");
+        .style("pointer-events", "none")
+        .merge(circle);
 
-    //for moving throug all area of visualization
-    // create a listening rectangle
 
-    const listeningRect = svg_temperature.append("rect")
+    const listeningRect = svg_temperature.selectAll(".listening-rect")
+        .data([null]);
+
+    listeningRect.enter()
+        .append("rect")
+        .attr("class", "listening-rect")
         .attr("width", width)
         .attr("height", height)
-        .classed("listening-rect", true);
+        .merge(listeningRect)
+        .on("mousemove", function (event) {
+            const [xCoord] = d3.pointer(event, this);
+            const bisectDate = d3.bisector(d => d.date).left;
+            const x0 = x.invert(xCoord);
+            const i = bisectDate(data, x0, 1);
+            const d0 = data[i - 1];
+            const d1 = data[i];
+            const d = x0 - d0.date > d1.date - x0 ? d1 : d0;
+            const xPos = x(d.date);
+            const yPos = y(d.tavg);
+
+            circle.attr("cx", xPos)
+                .attr("cy", yPos);
+
+            circle.transition()
+                .duration(50)
+                .attr("r", 5);
+
+            tooltip_temperature
+                .style("display", "block")
+                .style("left", `${xPos + 100}px`)
+                .style("top", `${yPos + 50}px`)
+                .html(`<strong>${d.date.toLocaleDateString()}</strong> 
+                <br><strong>Temperature</strong>
+                <br><strong>Max:</strong> ${d.tmax !== undefined ? (d.tmax).toFixed(0) + '°C' : 'N/A'}
+                <br><strong>Avg:</strong> ${d.tavg !== undefined ? (d.tavg).toFixed(0) + '°C' : 'N/A'}
+                <br><strong>Min:</strong> ${d.tmin !== undefined ? (d.tmin).toFixed(0) + '°C' : 'N/A'}`);
+        })
+        .on("mouseleave", function () {
+            circle.transition()
+                .duration(50)
+                .attr("r", 0);
+
+            tooltip_temperature.style("display", "none");
+        });
+
+    listeningRect.exit().remove();
 
 
-    // the mouse move function
+    const yAxisLabel = svg_temperature.selectAll(".y-axis-label")
+        .data([null]);
 
-    listeningRect.on("mousemove", function (event) {
-        const [xCoord] = d3.pointer(event, this);
-        const bisectDate = d3.bisector(d => d.date).left;  //taking current mouse position and closest point in graph
-        const x0 = x.invert(xCoord);
-        const i = bisectDate(data, x0, 1);
-        const d0 = data[i - 1];
-        const d1 = data[i];
-        const d = x0 - d0.date > d1.date - x0 ? d1 : d0;
-        const xPos = x(d.date);
-        const yPos = y(d.tavg);
-
-
-        // Update the circle position
-
-        circle.attr("cx", xPos)
-            .attr("cy", yPos);
-
-        // Add transition for the circle radius
-
-        circle.transition()
-            .duration(50)
-            .attr("r", 5);
-
-        // tooltip text
-
-        tooltip_temperature
-            .style("display", "block")
-            .style("left", `${xPos + 100}px`)
-            .style("top", `${yPos + 50}px`)
-            .html(`<strong>${d.date.toLocaleDateString()}</strong> 
-            <br><strong>Temperature</strong>
-            <br><strong>Max:</strong> ${d.tmax !== undefined ? (d.tmax).toFixed(0) + '°C' : 'N/A'}
-            <br><strong>Avg:</strong> ${d.tavg !== undefined ? (d.tavg).toFixed(0) + '°C' : 'N/A'}
-            <br><strong>Min:</strong> ${d.tmin !== undefined ? (d.tmin).toFixed(0) + '°C' : 'N/A'}
-            `)
-    });
-    // listening rectangle mouse leave function
-
-    listeningRect.on("mouseleave", function () {
-        circle.transition()
-            .duration(50)
-            .attr("r", 0);
-
-        tooltip_temperature.style("display", "none");
-    });
-
-
-
-    // Y-axis label
-
-    svg_temperature.append("text")
+    yAxisLabel.enter()
+        .append("text")
+        .attr("class", "y-axis-label")
         .attr("transform", "rotate(-90)")
         .attr("y", 0 - margin.left)
         .attr("x", 0 - (height / 2))
@@ -229,31 +224,37 @@ function drawTemperatureChart(data) {
         .style("font-size", "14px")
         .style("fill", "#777")
         .style("font-family", "sans-serif")
-        .text("Temperature (°C)");
+        .text("Temperature (°C)")
+        .merge(yAxisLabel);
 
-    // chart title
-    var city = cities.filter(city => city.value == selectedCity);
-    console.log(city)
+    // Update the chart title
+    const chartTitle = svg_temperature.selectAll(".chart-title")
+        .data([null]);
 
-    svg_temperature.append("text")
+    chartTitle.enter()
+        .append("text")
         .attr("class", "chart-title")
         .attr("x", margin.left - 115)
         .attr("y", margin.top - 100)
         .style("font-size", "24px")
         .style("font-weight", "bold")
         .style("font-family", "sans-serif")
-        .text(`Temperatures in ${city[0].text} ${selectedYear}.`);
+        .merge(chartTitle)
+        .text(`Temperatures in ${cities.find(city => city.value === selectedCity).text} ${selectedYear}.`);
 
-    // Add the source credit
 
-    svg_temperature.append("text")
+    const sourceCredit = svg_temperature.selectAll(".source-credit")
+        .data([null]);
+
+    sourceCredit.enter()
+        .append("text")
         .attr("class", "source-credit")
         .attr("x", width - 1125)
         .attr("y", height + margin.bottom - 3)
         .style("font-size", "9px")
         .style("font-family", "sans-serif")
+        .merge(sourceCredit)
         .text("Source: https://meteostat.net/en/");
-
 }
 
 
@@ -278,6 +279,8 @@ function discreteLegend({
     const svg_temperature = d3.select("#legend").append("svg")
         .attr("width", colWidth * nColumns)
         .attr("height", height)
+        // .attr("width", legendWidth)
+        // .attr("height", height)
         .attr("viewBox", [0, 0, legendWidth, height])
         .style("overflow", "visible")
         .style("display", "block");
@@ -306,4 +309,3 @@ function discreteLegend({
 
     return svg_temperature.node();
 }
-

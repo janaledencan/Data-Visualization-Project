@@ -4,42 +4,35 @@ const height3 = 500 - margin3.top - margin3.bottom;
 const legendWidth3 = 150;
 
 
-const x3 = d3.scaleTime()
-    .range([0, width3]);
+const x3 = d3.scaleTime().range([0, width3]);
+const y3 = d3.scaleLinear().range([height3, 0]);
 
-const y3 = d3.scaleLinear()
-    .range([height3, 0]);
-
-
-selectedCity = "zg";
-selectedYear = "2022";
+//let selectedYear = "2022";
 
 const svg_cities = d3.select("#cities_temperature_chart").append("svg")
     .attr("width", width3 + margin3.left + margin3.right)
     .attr("height", height3 + margin3.top + margin3.bottom);
 
-
-// create tooltip div
+// Create tooltip div
 const tooltip_cities = d3.select("#cities_temperature_chart")
     .append("div")
     .attr("class", "tooltip2")
 
 
-legend_data_cities = [
+const legend_data_cities = [
     { "temp": "Zagreb", "primary": "#ef476f" },
     { "temp": "Split", "primary": "#899499" },
     { "temp": "Rijeka", "primary": "#118ab2" },
     { "temp": "Osijek", "primary": "#111111" },
 ];
 
-// Parse the date and ensure tavg is a number for each dataset
 const parseDate = d3.timeParse("%Y-%m-%d");
 
 let dataForCitiesChart = [];
 
-// Load and Process Data
+
 function fetchDataForCitiesChart() {
-    // Load multiple JSON files 
+    // Load multiple JSON files using Promise.all
     Promise.all([
         d3.json(`data/zg_${selectedYear}.json`),
         d3.json(`data/st_${selectedYear}.json`),
@@ -53,11 +46,8 @@ function fetchDataForCitiesChart() {
                 d.tavg = +d.tavg;
             });
         });
-        console.log(datasets);
-        dataForCitiesChart = datasets;
-        console.log(dataForCitiesChart);
 
-        // Update the graph with the new data
+        dataForCitiesChart = datasets;
         updateCitiesGraph(dataForCitiesChart);
 
     }).catch(function (error) {
@@ -70,59 +60,50 @@ fetchDataForCitiesChart();
 d3.select("#selectButtonYear").on("change", function () {
     selectedYear = this.value;
     fetchData();
-    updateGraph(dataForTemperatureChart);
     fetchDataForClimateChart();
-    updateClimateGraph(dataForClimateChart);
     fetchDataForCitiesChart();
+    updateGraph(dataForTemperatureChart);
+    updateClimateGraph(dataForClimateChart);
     updateCitiesGraph(dataForCitiesChart);
-    console.log("U city fileu" + selectedYear);
+    console.log("In city file: " + selectedYear);
 });
 
-
 function updateCitiesGraph(data) {
-
-    svg_cities.selectAll("*").remove();
     drawLines(data);
 }
 
 // Function to draw lines for each dataset's tavg values
-
 function drawLines(datasets) {
 
+    svg_cities.selectAll("g").remove();
     const g = svg_cities.append("g").attr("transform", `translate(${margin3.left},${margin3.top})`);
 
-    // Combine all dates to set the x domain
     const allDates = datasets.flatMap(data => data.map(d => d.date));
     x3.domain(d3.extent(allDates));
 
-    // Combine all tavg values to set the y domain
     const allTavg = datasets.flatMap(data => data.map(d => d.tavg));
-    y3.domain([d3.min(allTavg), d3.max(allTavg)]);
+    y3.domain([-5, 35]);
 
-
-    // Create line generators for each dataset
     const line = d3.line()
         .x(d => x3(d.date))
         .y(d => y3(d.tavg));
 
     // Define colors for each line
     const colors = d3.scaleOrdinal()
-        .domain(datasets.map(d => d))
+        .domain(datasets.map((_, i) => i))
         .range(["#EF476F", "#118AB2", "#06D6A0", "#C29D48"]);
 
-
-    // Draw the axes
+    // Draw the x-axis at y = 0
     g.append("g")
         .attr("class", "axis axis--x")
         .attr("transform", `translate(0,${y3(0)})`)
-        .call(d3.axisBottom(x3));
-
+        .call(d3.axisBottom(x3).tickFormat(d3.timeFormat("%b")));
 
     g.append("g")
         .attr("class", "axis axis--y")
         .call(d3.axisLeft(y3));
 
-    // Add horizontal gridlines
+
     g.selectAll(".yGrid")
         .data(y3.ticks(10))
         .enter()
@@ -136,9 +117,8 @@ function drawLines(datasets) {
         .attr("stroke-width", .5);
 
 
-    // Y-axis label
-
     g.append("text")
+        .attr("class", "y-axis-label")
         .attr("transform", "rotate(-90)")
         .attr("y", 0 - margin3.left)
         .attr("x", 0 - (height3 / 2))
@@ -149,7 +129,6 @@ function drawLines(datasets) {
         .style("font-family", "sans-serif")
         .text("Temperature (°C)");
 
-    // the chart title
 
     g.append("text")
         .attr("class", "chart-title")
@@ -158,20 +137,25 @@ function drawLines(datasets) {
         .style("font-size", "24px")
         .style("font-weight", "bold")
         .style("font-family", "sans-serif")
-        .text(`Average Temperatures in Croatian Cities ${selectedYear}.`);
+        .text(`Average Temperatures in Croatian Cities ${selectedYear}`);
 
+    // Bind the data
+    const lines = g.selectAll(".line")
+        .data(datasets);
 
-    // Draw a line for each dataset
-    datasets.forEach((data, index) => {
-        g.append("path")
-            .datum(data)
-            .attr("fill", "none")
-            .attr("class", "line")
-            .attr("id", `line-${index}`)  // Add a unique ID for each line
-            .attr("d", line)
-            .style("stroke", colors(index));
-    });
+    // Enter new lines
+    lines.enter()
+        .append("path")
+        .attr("class", "line")
+        .attr("id", (d, i) => `line-${i}`)
+        .attr("fill", "none")
+        .attr("stroke-width", 1.5)
+        .merge(lines)
+        .attr("d", line)
+        .style("stroke", (d, i) => colors(i));
 
+    // Exit old lines
+    lines.exit().remove();
 
     // Define a function to toggle the visibility of lines
     function toggleLineVisibility(cityIndex) {
@@ -190,7 +174,7 @@ function drawLines(datasets) {
         }
     }
 
-    // Attach event listeners to legend items
+
     legend_data_cities.forEach((city, index) => {
         d3.select(`#legend3 .legend-item:nth-child(${index + 1})`).on("click", () => {
             toggleLineVisibility(index);
@@ -198,25 +182,30 @@ function drawLines(datasets) {
     });
 
     // Add a circle element for moving through the visualization
-    const circleCities = svg_cities.append("circle")
-        .attr("r", 0)
-        .attr("fill", "steelblue")
-        .style("stroke", "white")
-        .attr("opacity", .70)
-        .style("pointer-events", "none")
-        .attr("transform", `translate(${margin3.left},${margin3.top})`);
-
+    let circleCities = svg_cities.select("circle");
+    if (circleCities.empty()) {
+        circleCities = svg_cities.append("circle")
+            .attr("r", 0)
+            .attr("fill", "steelblue")
+            .style("stroke", "white")
+            .attr("opacity", .70)
+            .style("pointer-events", "none")
+            .attr("transform", `translate(${margin3.left},${margin3.top})`);
+    }
 
     // Create a listening rectangle
-    const listeningRectCities = svg_cities.append("rect")
-        .attr("width", width3)
-        .attr("height", height3)
-        .attr("class", "rect2")
-        .attr("transform", `translate(${margin3.left},${margin3.top})`);
+    let listeningRectCities = svg_cities.select(".rect2");
+    if (listeningRectCities.empty()) {
+        listeningRectCities = svg_cities.append("rect")
+            .attr("width", width3)
+            .attr("height", height3)
+            .attr("class", "rect2")
+            .attr("transform", `translate(${margin3.left},${margin3.top})`)
+            .style("fill", "none")
+            .style("pointer-events", "all");
+    }
 
 
-
-    // Create the mouse move function
     listeningRectCities.on("mousemove", function (event) {
         const [xCoord] = d3.pointer(event, this);
         const x0 = x3.invert(xCoord);
@@ -228,31 +217,32 @@ function drawLines(datasets) {
             const d0 = data[i - 1];
             const d1 = data[i];
             const d = x0 - d0.date > d1.date - x0 ? d1 : d0;
-            return { data: d, index: index };
+            return { data: d, index };
         });
 
-        // Filter out hidden lines
-        const visibleDataPointsCities = dataPoints.filter(({ index }) => d3.select(`#line-${index}`).style("opacity") === "1");
+        // Filter out data points where the line is hidden
+        const visibleDataPoints = dataPoints.filter(({ index }) => {
+            const lineElement = document.getElementById(`line-${index}`);
+            return lineElement && lineElement.style.opacity !== "0";
+        });
 
-
-        if (visibleDataPointsCities.length === 0) {
+        if (visibleDataPoints.length === 0) {
             tooltip_cities.style("display", "none");
             return;
         }
 
-        const xPosCities = x3(visibleDataPointsCities[0].data.date);
-        const yPosCities = y3(visibleDataPointsCities[0].data.tavg);
+        const xPos = x3(visibleDataPoints[0].data.date);
+        const yPos = y3(visibleDataPoints[0].data.tavg);
 
         // Update the circle position
-        circleCities.attr("cx", xPosCities)
-            .attr("cy", yPosCities)
+        circleCities.attr("cx", xPos)
+            .attr("cy", yPos)
             .attr("r", 5);
 
         // Update the tooltip content
-        const tooltipContentCities = visibleDataPointsCities.map(({ data, index }) => {
+        const tooltipContent = visibleDataPoints.map(({ data, index }) => {
             return `<strong>${legend_data_cities[index].temp}:</strong> ${data.tavg !== undefined ? data.tavg.toFixed(0) + '&#176;C' : 'N/A'}`;
         }).join("<br>");
-
 
         circleCities.transition()
             .duration(50)
@@ -260,11 +250,10 @@ function drawLines(datasets) {
 
         // Show and position the tooltip
         tooltip_cities.style("display", "block")
-            .style("left", `${xPosCities + 20}px`)
-            .style("top", `${yPosCities + 1200}px`)
-            .html(`<strong>Date:</strong> ${visibleDataPointsCities[0].data.date.toLocaleDateString()}<br>${tooltipContentCities}`);
+            .style("left", `${xPos + 20}px`)
+            .style("top", `${yPos + 1200}px`)
+            .html(`<strong>Date:</strong> ${visibleDataPoints[0].data.date.toLocaleDateString()}<br>${tooltipContent}`);
     });
-
 
     // Listening rectangle mouse leave function
     listeningRectCities.on("mouseleave", function () {
@@ -274,5 +263,6 @@ function drawLines(datasets) {
 
         tooltip_cities.style("display", "none");
     });
+
 
 }
